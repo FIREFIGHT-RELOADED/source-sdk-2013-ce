@@ -46,10 +46,6 @@ ConVar sv_hl2mp_item_respawn_time( "sv_hl2mp_item_respawn_time", "30", FCVAR_GAM
 ConVar sv_report_client_settings("sv_report_client_settings", "0", FCVAR_GAMEDLL | FCVAR_NOTIFY );
 
 extern ConVar mp_chattime;
-
-extern CBaseEntity	 *g_pLastCombineSpawn;
-extern CBaseEntity	 *g_pLastRebelSpawn;
-
 #define WEAPON_MAX_DISTANCE_FROM_SPAWN 64
 
 #endif
@@ -115,6 +111,12 @@ static const char *s_PreserveEnts[] =
 	"info_player_deathmatch",
 	"info_player_combine",
 	"info_player_rebel",
+	"info_player_terrorist",
+	"info_player_counterterrorist",
+	"info_player_axis",
+	"info_player_allies",
+	"info_player_red",
+	"info_player_blue",
 	"info_map_parameters",
 	"keyframe_rope",
 	"move_rope",
@@ -236,10 +238,6 @@ void CHL2MPRules::CreateStandardEntities( void )
 	// Create the entity that will send our data to the client.
 
 	BaseClass::CreateStandardEntities();
-
-	g_pLastCombineSpawn = NULL;
-	g_pLastRebelSpawn = NULL;
-
 #ifdef DBGFLAG_ASSERT
 	CBaseEntity *pEnt = 
 #endif
@@ -323,30 +321,12 @@ void CHL2MPRules::Think( void )
 
 	if ( flFragLimit )
 	{
-		if( IsTeamplay() == true )
-		{
-			CTeam *pCombine = g_Teams[TEAM_COMBINE];
-			CTeam *pRebels = g_Teams[TEAM_REBELS];
+		CTeam* pRebels = g_Teams[TEAM_UNASSIGNED];
 
-			if ( pCombine->GetScore() >= flFragLimit || pRebels->GetScore() >= flFragLimit )
-			{
-				GoToIntermission();
-				return;
-			}
-		}
-		else
+		if (pRebels->GetScore() >= flFragLimit)
 		{
-			// check if any player is over the frag limit
-			for ( int i = 1; i <= gpGlobals->maxClients; i++ )
-			{
-				CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
-
-				if ( pPlayer && pPlayer->FragCount() >= flFragLimit )
-				{
-					GoToIntermission();
-					return;
-				}
-			}
+			GoToIntermission();
+			return;
 		}
 	}
 
@@ -771,44 +751,9 @@ void CHL2MPRules::ClientSettingsChanged( CBasePlayer *pPlayer )
 	//If we're different.
 	if ( stricmp( szModelName, pCurrentModel ) )
 	{
-		//Too soon, set the cvar back to what it was.
-		//Note: this will make this function be called again
-		//but since our models will match it'll just skip this whole dealio.
-		if ( pHL2Player->GetNextModelChangeTime() >= gpGlobals->curtime )
-		{
-			char szReturnString[512];
-
-			Q_snprintf( szReturnString, sizeof (szReturnString ), "cl_playermodel %s\n", pCurrentModel );
-			engine->ClientCommand ( pHL2Player->edict(), szReturnString );
-
-			Q_snprintf( szReturnString, sizeof( szReturnString ), "Please wait %d more seconds before trying to switch.\n", (int)(pHL2Player->GetNextModelChangeTime() - gpGlobals->curtime) );
-			ClientPrint( pHL2Player, HUD_PRINTTALK, szReturnString );
-			return;
-		}
-
-		if ( HL2MPRules()->IsTeamplay() == false )
-		{
-			pHL2Player->SetPlayerModel();
-
-			const char *pszCurrentModelName = modelinfo->GetModelName( pHL2Player->GetModel() );
-
-			char szReturnString[128];
-			Q_snprintf( szReturnString, sizeof( szReturnString ), "Your player model is: %s\n", pszCurrentModelName );
-
-			ClientPrint( pHL2Player, HUD_PRINTTALK, szReturnString );
-		}
-		else
-		{
-			if ( Q_stristr( szModelName, "models/human") )
-			{
-				pHL2Player->ChangeTeam( TEAM_REBELS );
-			}
-			else
-			{
-				pHL2Player->ChangeTeam( TEAM_COMBINE );
-			}
-		}
+		pHL2Player->SetPlayerModel();
 	}
+
 	if ( sv_report_client_settings.GetInt() == 1 )
 	{
 		UTIL_LogPrintf( "\"%s\" cl_cmdrate = \"%s\"\n", pHL2Player->GetPlayerName(), engine->GetClientConVarValue( pHL2Player->entindex(), "cl_cmdrate" ));
@@ -816,7 +761,6 @@ void CHL2MPRules::ClientSettingsChanged( CBasePlayer *pPlayer )
 
 	BaseClass::ClientSettingsChanged( pPlayer );
 #endif
-	
 }
 
 int CHL2MPRules::PlayerRelationship( CBaseEntity *pPlayer, CBaseEntity *pTarget )
@@ -824,7 +768,7 @@ int CHL2MPRules::PlayerRelationship( CBaseEntity *pPlayer, CBaseEntity *pTarget 
 #ifndef CLIENT_DLL
 	// half life multiplay has a simple concept of Player Relationships.
 	// you are either on another player's team, or you are not.
-	if ( !pPlayer || !pTarget || !pTarget->IsPlayer() || IsTeamplay() == false )
+	if ( !pPlayer || !pTarget || !pTarget->IsPlayer())
 		return GR_NOTTEAMMATE;
 
 	if ( (*GetTeamID(pPlayer) != '\0') && (*GetTeamID(pTarget) != '\0') && !stricmp( GetTeamID(pPlayer), GetTeamID(pTarget) ) )
@@ -838,10 +782,7 @@ int CHL2MPRules::PlayerRelationship( CBaseEntity *pPlayer, CBaseEntity *pTarget 
 
 const char *CHL2MPRules::GetGameDescription( void )
 { 
-	if ( IsTeamplay() )
-		return "Team Deathmatch"; 
-
-	return "Deathmatch"; 
+	return "FIREFIGHT RELOADED"; 
 } 
 
 bool CHL2MPRules::IsConnectedUserInfoChangeAllowed( CBasePlayer *pPlayer )
@@ -959,7 +900,7 @@ CAmmoDef *GetAmmoDef()
 		int count = 1;
 		count = clamp( count, 1, 16 );
 
-		int iTeam = TEAM_COMBINE;
+		int iTeam = TEAM_UNASSIGNED;
 				
 		// Look at -frozen.
 		bool bFrozen = false;
@@ -970,7 +911,6 @@ CAmmoDef *GetAmmoDef()
 			BotPutInServer( bFrozen, iTeam );
 		}
 	}
-
 
 	ConCommand cc_Bot( "bot", Bot_f, "Add a bot.", FCVAR_CHEAT );
 
@@ -1030,17 +970,11 @@ void CHL2MPRules::RestartGame()
 
 	// Respawn entities (glass, doors, etc..)
 
-	CTeam *pRebels = GetGlobalTeam( TEAM_REBELS );
-	CTeam *pCombine = GetGlobalTeam( TEAM_COMBINE );
+	CTeam *pRebels = GetGlobalTeam( TEAM_UNASSIGNED );
 
 	if ( pRebels )
 	{
 		pRebels->SetScore( 0 );
-	}
-
-	if ( pCombine )
-	{
-		pCombine->SetScore( 0 );
 	}
 
 	m_flIntermissionEndTime = 0;

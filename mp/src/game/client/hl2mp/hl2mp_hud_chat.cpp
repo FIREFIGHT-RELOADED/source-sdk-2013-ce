@@ -16,14 +16,11 @@
 #include "hl2mp_gamerules.h"
 #include "ihudlcd.h"
 
-
-
 DECLARE_HUDELEMENT( CHudChat );
 
 DECLARE_HUD_MESSAGE( CHudChat, SayText );
 DECLARE_HUD_MESSAGE( CHudChat, SayText2 );
 DECLARE_HUD_MESSAGE( CHudChat, TextMsg );
-
 
 //=====================
 //CHudChatLine
@@ -98,19 +95,5 @@ int CHudChat::GetChatInputOffset( void )
 
 Color CHudChat::GetClientColor( int clientIndex )
 {
-	if ( clientIndex == 0 ) // console msg
-	{
-		return g_ColorYellow;
-	}
-	else if( g_PR )
-	{
-		switch ( g_PR->GetTeam( clientIndex ) )
-		{
-		case TEAM_COMBINE	: return g_ColorBlue;
-		case TEAM_REBELS	: return g_ColorRed;
-		default	: return g_ColorYellow;
-		}
-	}
-
-	return g_ColorYellow;
+	return g_ColorBlue;
 }

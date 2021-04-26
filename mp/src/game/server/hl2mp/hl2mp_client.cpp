@@ -43,7 +43,6 @@ void FinishClientPutInServer( CHL2MP_Player *pPlayer )
 	pPlayer->InitialSpawn();
 	pPlayer->Spawn();
 
-
 	char sName[128];
 	Q_strncpy( sName, pPlayer->GetPlayerName(), sizeof( sName ) );
 	
@@ -57,11 +56,6 @@ void FinishClientPutInServer( CHL2MP_Player *pPlayer )
 
 	// notify other clients of player joining the game
 	UTIL_ClientPrintAll( HUD_PRINTNOTIFY, "#Game_connected", sName[0] != 0 ? sName : "<unconnected>" );
-
-	if ( HL2MPRules()->IsTeamplay() == true )
-	{
-		ClientPrint( pPlayer, HUD_PRINTTALK, "You are on team %s1\n", pPlayer->GetTeam()->GetName() );
-	}
 
 	const ConVar *hostname = cvar->FindVar( "hostname" );
 	const char *title = (hostname) ? hostname->GetString() : "MESSAGE OF THE DAY";
@@ -114,7 +108,7 @@ const char *GetGameDescription()
 	if ( g_pGameRules ) // this function may be called before the world has spawned, and the game rules initialized
 		return g_pGameRules->GetGameDescription();
 	else
-		return "Half-Life 2 Deathmatch";
+		return "FIREFIGHT RELOADED";
 }
 
 //-----------------------------------------------------------------------------

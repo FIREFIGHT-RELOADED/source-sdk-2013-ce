@@ -80,7 +80,6 @@ public:
 	void FlashlightTurnOn( void );
 	void FlashlightTurnOff( void );
 	void	PrecacheFootStepSounds( void );
-	bool	ValidatePlayerModel( const char *pModel );
 
 	QAngle GetAnimEyeAngles( void ) { return m_angEyeAngles.Get(); }
 
@@ -95,10 +94,8 @@ public:
 
 	void ResetAnimation( void );
 	void SetPlayerModel( void );
-	void SetPlayerTeamModel( void );
 	Activity TranslateTeamActivity( Activity ActToTranslate );
-	
-	float GetNextModelChangeTime( void ) { return m_flNextModelChangeTime; }
+
 	float GetNextTeamChangeTime( void ) { return m_flNextTeamChangeTime; }
 	void  PickDefaultSpawnTeam( void );
 	void  SetupPlayerSoundsByModel( const char *pModelName );
@@ -144,11 +141,9 @@ private:
 	CPlayerAnimState   m_PlayerAnimState;
 
 	int m_iLastWeaponFireUsercmd;
-	int m_iModelType;
 	CNetworkVar( int, m_iSpawnInterpCounter );
 	CNetworkVar( int, m_iPlayerSoundType );
 
-	float m_flNextModelChangeTime;
 	float m_flNextTeamChangeTime;
 
 	float m_flSlamProtectTime;	

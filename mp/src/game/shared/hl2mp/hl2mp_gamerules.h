@@ -26,13 +26,6 @@
 #define VEC_CROUCH_TRACE_MIN	HL2MPRules()->GetHL2MPViewVectors()->m_vCrouchTraceMin
 #define VEC_CROUCH_TRACE_MAX	HL2MPRules()->GetHL2MPViewVectors()->m_vCrouchTraceMax
 
-enum
-{
-	TEAM_COMBINE = 2,
-	TEAM_REBELS,
-};
-
-
 #ifdef CLIENT_DLL
 	#define CHL2MPRules C_HL2MPRules
 	#define CHL2MPGameRulesProxy C_HL2MPGameRulesProxy
@@ -142,8 +135,6 @@ public:
 
 	void PlayerKilled( CBasePlayer *pVictim, const CTakeDamageInfo &info );
 
-	
-	bool	IsTeamplay( void ) { return m_bTeamPlayEnabled;	}
 	void	CheckAllPlayersReady( void );
 
 	virtual bool IsConnectedUserInfoChangeAllowed( CBasePlayer *pPlayer );
